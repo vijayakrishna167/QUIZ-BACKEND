@@ -1,27 +1,28 @@
+// routes/admin.js
 const express = require('express');
 const Admin = require('../models/Admin');
 const bcrypt = require('bcryptjs');
-const Question = require('../models/Question');  // Import the Question model
 const router = express.Router();
+const Question=require("../models/Question")
 
-// Admin registration route (existing)
+// Admin registration route
 router.post('/register', async (req, res) => {
   const { username, email, password } = req.body;
 
   try {
-    let admin = await Admin.findOne({ email });
-    if (admin) {
+    // Check if admin already exists
+    const existingAdmin = await Admin.findOne({ email });
+    if (existingAdmin) {
       return res.status(400).json({ message: 'Admin already exists' });
     }
 
-    // Hash the password before saving
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Create new admin and save to database
+    const newAdmin = new Admin({ username, email, password });
+    await newAdmin.save();
 
-    admin = new Admin({ username, email, password: hashedPassword });
-    await admin.save();
-
-    res.status(201).json({ message: 'Admin registered successfully', username: admin.username });
-  } catch (err) {
+    res.status(201).json({ message: 'Admin registered successfully' });
+  } catch (error) {
+    console.error('Error registering admin:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -43,11 +44,11 @@ router.post('/login', async (req, res) => {
 
     res.status(200).json({ message: 'Login successful', isAdmin: true, username: admin.username });
   } catch (err) {
+    console.error('Server error during login:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
 
-// Route to add a new question
 router.post('/add-question', async (req, res) => {
   try {
     const { question, option1, option2, option3, option4, correctAnswer } = req.body;
